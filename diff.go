@@ -246,10 +246,6 @@ func (w diffPrinter) diff(av, bv reflect.Value) {
 		if a, b := av.String(), bv.String(); a != b {
 			w.printf("%q != %q", a, b)
 			w.structuredPrint(fmt.Sprintf("%q", a), fmt.Sprintf("%q", b))
-		} else {
-			if w.labels.Exists(w.leafName) {
-				w.labels.Set(w.leafName, av.String())
-			}
 		}
 	case reflect.Struct:
 		for i := 0; i < av.NumField(); i++ {

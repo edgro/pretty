@@ -22,7 +22,7 @@ type Options struct {
 	customComparators        map[reflect.Type]Equals
 	numericComparator        Float64Equals
 	ignoreTypeNameDifference bool
-	labelNames               []string
+	labelFieldNames          []string
 }
 
 func WithIgnoreTypeNameDiffs(ignore bool) func(*Options) {
@@ -53,7 +53,7 @@ func newMustAbsoluteDeltaLessThan(e float64) func(a, b float64) bool {
 
 func WithLabelFields(labelFieldNames ...string) func(*Options) {
 	return func(s *Options) {
-		s.labelNames = labelFieldNames
+		s.labelFieldNames = labelFieldNames
 	}
 }
 
@@ -76,6 +76,7 @@ func NewCustomDiff(options ...func(*Options)) Comparator {
 		customComparators:        opts.customComparators,
 		numericComparator:        opts.numericComparator,
 		ignoreTypeNameDifference: opts.ignoreTypeNameDifference,
+		labelNames:               opts.labelFieldNames,
 	}
 }
 
@@ -83,14 +84,16 @@ type customDiffPrinter struct {
 	customComparators        map[reflect.Type]Equals
 	numericComparator        Float64Equals
 	ignoreTypeNameDifference bool
+	labelNames               []string
 }
 
 func (c customDiffPrinter) Diff(a, b interface{}) (desc []string, ok bool) {
 	diffPrinter{
 		w:                        (*sbuf)(&desc),
+		ignoreTypeNameDifference: c.ignoreTypeNameDifference,
 		customComparators:        c.customComparators,
 		numericComparator:        c.numericComparator,
-		ignoreTypeNameDifference: c.ignoreTypeNameDifference,
+		labels:                   NewLabels(c.labelNames...),
 		aVisited:                 make(map[visit]visit),
 		bVisited:                 make(map[visit]visit),
 	}.diff(reflect.ValueOf(a), reflect.ValueOf(b))
@@ -106,6 +109,7 @@ func (c customDiffPrinter) StructuredDiff(a, b interface{}) (desc []StructuredDi
 		ignoreTypeNameDifference: c.ignoreTypeNameDifference,
 		customComparators:        c.customComparators,
 		numericComparator:        c.numericComparator,
+		labels:                   NewLabels(c.labelNames...),
 		aVisited:                 make(map[visit]visit),
 		bVisited:                 make(map[visit]visit),
 	}.diff(reflect.ValueOf(a), reflect.ValueOf(b))

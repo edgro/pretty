@@ -169,6 +169,39 @@ func Test_customStructuredDiffPrinter_Diff(t *testing.T) {
 			wantDesc: nil,
 			wantOk:   true,
 		},
+		{
+			name: "label fields",
+			fields: fields{
+				opts: []func(options *Options){
+					WithLabelFields("str"),
+				},
+			},
+			args: args{
+				a: testStruct{
+					intField:   1,
+					floatField: 53.23,
+					child: testStruct2{
+						str: "strValue A",
+					},
+				},
+				b: testStruct{
+					intField:   1,
+					floatField: 53.23,
+					child: testStruct2{
+						str: "strValue B",
+					},
+				},
+			},
+			wantDesc: []StructuredDiff{
+				{
+					FieldName: "child.str",
+					Labels:    []Label{{Name: "str", Value: "strValue A"}},
+					ValueA:    "\"strValue A\"",
+					ValueB:    "\"strValue B\"",
+				},
+			},
+			wantOk: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -51,7 +51,7 @@ func (l *labels) Get(name string) string {
 func (l *labels) Current() []Label {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	result := make([]Label, len(l.labelsMap))
+	result := make([]Label, 0)
 	for _, name := range l.labelNames {
 		result = append(result, Label{
 			Name:  name,
