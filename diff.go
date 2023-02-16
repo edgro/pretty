@@ -69,13 +69,15 @@ func Ldiff(l Logfer, a, b interface{}) {
 }
 
 type diffPrinter struct {
-	w                        Printfer
-	structuredOutput         StructuredDiffer
-	l                        string // label
-	ignoreTypeNameDifference bool
+	w        Printfer
+	l        string // labels
+	leafName string // labels
 
-	customComparators map[reflect.Type]Equals
-	numericComparator Float64Equals
+	structuredOutput         StructuredDiffer
+	ignoreTypeNameDifference bool
+	customComparators        map[reflect.Type]Equals
+	numericComparator        Float64Equals
+	labels                   Labels
 
 	aVisited map[visit]visit
 	bVisited map[visit]visit
@@ -95,6 +97,7 @@ func (w diffPrinter) structuredPrint(aValue, bValue string) {
 			FieldName: w.l,
 			ValueA:    aValue,
 			ValueB:    bValue,
+			Labels:    w.labels.Current(),
 		})
 	}
 }
@@ -243,11 +246,21 @@ func (w diffPrinter) diff(av, bv reflect.Value) {
 		if a, b := av.String(), bv.String(); a != b {
 			w.printf("%q != %q", a, b)
 			w.structuredPrint(fmt.Sprintf("%q", a), fmt.Sprintf("%q", b))
+		} else {
+			if w.labels.Exists(w.leafName) {
+				w.labels.Set(w.leafName, av.String())
+			}
 		}
 	case reflect.Struct:
 		for i := 0; i < av.NumField(); i++ {
+			if at.Field(i).Type.Kind() == reflect.String && w.labels.Exists(at.Field(i).Name) {
+				w.labels.Set(at.Field(i).Name, av.Field(i).String())
+			}
+		}
+		for i := 0; i < av.NumField(); i++ {
 			w.relabel(at.Field(i).Name).diff(av.Field(i), bv.Field(i))
 		}
+		w.labels.Clear()
 	default:
 		panic("unknown reflect Kind: " + kind.String())
 	}
@@ -259,6 +272,7 @@ func (d diffPrinter) relabel(name string) (d1 diffPrinter) {
 		d1.l += "."
 	}
 	d1.l += name
+	d1.leafName = name
 	return d1
 }
 

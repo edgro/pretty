@@ -2,8 +2,14 @@ package pretty
 
 type StructuredDiff struct {
 	FieldName string
+	Labels    []Label
 	ValueA    string
 	ValueB    string
+}
+
+type Label struct {
+	Name  string
+	Value string
 }
 
 type StructuredDiffer interface {

@@ -22,6 +22,7 @@ type Options struct {
 	customComparators        map[reflect.Type]Equals
 	numericComparator        Float64Equals
 	ignoreTypeNameDifference bool
+	labelNames               []string
 }
 
 func WithIgnoreTypeNameDiffs(ignore bool) func(*Options) {
@@ -47,6 +48,12 @@ var globalPrecision = defaultPrecision
 func newMustAbsoluteDeltaLessThan(e float64) func(a, b float64) bool {
 	return func(a, b float64) bool {
 		return math.Abs(a-b) <= e+globalPrecision
+	}
+}
+
+func WithLabelFields(labelFieldNames ...string) func(*Options) {
+	return func(s *Options) {
+		s.labelNames = labelFieldNames
 	}
 }
 
