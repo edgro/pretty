@@ -12,6 +12,7 @@ type customDiff struct {
 
 type Comparator interface {
 	Diff(a, b interface{}) (desc []string, ok bool)
+	StructuredDiff(a, b interface{}) (desc []StructuredDiff, ok bool)
 }
 
 type Equals func(a, b interface{}) bool
@@ -71,4 +72,18 @@ func (c customDiffPrinter) Diff(a, b interface{}) (desc []string, ok bool) {
 		bVisited:          make(map[visit]visit),
 	}.diff(reflect.ValueOf(a), reflect.ValueOf(b))
 	return desc, len(desc) == 0
+}
+
+func (c customDiffPrinter) StructuredDiff(a, b interface{}) (desc []StructuredDiff, ok bool) {
+	descStr := make([]string, 0)
+	structuredOut := NewStructuredDiffer()
+	diffPrinter{
+		w:                 (*sbuf)(&descStr),
+		structuredOutput:  structuredOut,
+		customComparators: c.customComparators,
+		numericComparator: c.numericComparator,
+		aVisited:          make(map[visit]visit),
+		bVisited:          make(map[visit]visit),
+	}.diff(reflect.ValueOf(a), reflect.ValueOf(b))
+	return structuredOut.Results(), len(structuredOut.Results()) == 0
 }
