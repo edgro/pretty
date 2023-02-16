@@ -69,9 +69,10 @@ func Ldiff(l Logfer, a, b interface{}) {
 }
 
 type diffPrinter struct {
-	w                Printfer
-	structuredOutput StructuredDiffer
-	l                string // label
+	w                        Printfer
+	structuredOutput         StructuredDiffer
+	l                        string // label
+	ignoreTypeNameDifference bool
 
 	customComparators map[reflect.Type]Equals
 	numericComparator Float64Equals
@@ -115,7 +116,7 @@ func (w diffPrinter) diff(av, bv reflect.Value) {
 
 	at := av.Type()
 	bt := bv.Type()
-	if at != bt {
+	if !w.ignoreTypeNameDifference && at != bt {
 		w.printf("%v != %v", at, bt)
 		w.structuredPrint(fmt.Sprintf("%v", at), fmt.Sprintf("%v", bt))
 		return

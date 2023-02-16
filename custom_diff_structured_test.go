@@ -18,6 +18,12 @@ func Test_customStructuredDiffPrinter_Diff(t *testing.T) {
 	type testStruct2 struct {
 		str string
 	}
+	type testStruct3sameAstestStruct struct {
+		intField   int
+		floatField float64
+		child      testStruct2
+	}
+
 	type testStruct struct {
 		intField   int
 		floatField float64
@@ -129,6 +135,32 @@ func Test_customStructuredDiffPrinter_Diff(t *testing.T) {
 				b: testStruct{
 					intField:   1,
 					floatField: 53.24,
+					child: testStruct2{
+						str: "strValue",
+					},
+				},
+			},
+			wantDesc: nil,
+			wantOk:   true,
+		},
+		{
+			name: "type names ignore",
+			fields: fields{
+				opts: []func(options *Options){
+					WithIgnoreTypeNameDiffs(true),
+				},
+			},
+			args: args{
+				a: testStruct3sameAstestStruct{
+					intField:   1,
+					floatField: 53.23,
+					child: testStruct2{
+						str: "strValue",
+					},
+				},
+				b: testStruct{
+					intField:   1,
+					floatField: 53.23,
 					child: testStruct2{
 						str: "strValue",
 					},

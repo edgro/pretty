@@ -19,8 +19,21 @@ type Equals func(a, b interface{}) bool
 type Float64Equals func(a, b float64) bool
 
 type Options struct {
-	customComparators map[reflect.Type]Equals
-	numericComparator Float64Equals
+	customComparators        map[reflect.Type]Equals
+	numericComparator        Float64Equals
+	ignoreTypeNameDifference bool
+}
+
+func WithIgnoreTypeNameDiffs(ignore bool) func(*Options) {
+	return func(s *Options) {
+		s.ignoreTypeNameDifference = ignore
+	}
+}
+
+func WithPrecision(precision float64) func(*Options) {
+	return func(s *Options) {
+		globalPrecision = precision
+	}
 }
 
 func WithCustomComparators(customComparators map[reflect.Type]Equals) func(*Options) {
@@ -29,11 +42,11 @@ func WithCustomComparators(customComparators map[reflect.Type]Equals) func(*Opti
 	}
 }
 
-var precision = defaultPrecision
+var globalPrecision = defaultPrecision
 
 func newMustAbsoluteDeltaLessThan(e float64) func(a, b float64) bool {
 	return func(a, b float64) bool {
-		return math.Abs(a-b) <= e+precision
+		return math.Abs(a-b) <= e+globalPrecision
 	}
 }
 
@@ -53,23 +66,26 @@ func NewCustomDiff(options ...func(*Options)) Comparator {
 		o(&opts)
 	}
 	return &customDiffPrinter{
-		customComparators: opts.customComparators,
-		numericComparator: opts.numericComparator,
+		customComparators:        opts.customComparators,
+		numericComparator:        opts.numericComparator,
+		ignoreTypeNameDifference: opts.ignoreTypeNameDifference,
 	}
 }
 
 type customDiffPrinter struct {
-	customComparators map[reflect.Type]Equals
-	numericComparator Float64Equals
+	customComparators        map[reflect.Type]Equals
+	numericComparator        Float64Equals
+	ignoreTypeNameDifference bool
 }
 
 func (c customDiffPrinter) Diff(a, b interface{}) (desc []string, ok bool) {
 	diffPrinter{
-		w:                 (*sbuf)(&desc),
-		customComparators: c.customComparators,
-		numericComparator: c.numericComparator,
-		aVisited:          make(map[visit]visit),
-		bVisited:          make(map[visit]visit),
+		w:                        (*sbuf)(&desc),
+		customComparators:        c.customComparators,
+		numericComparator:        c.numericComparator,
+		ignoreTypeNameDifference: c.ignoreTypeNameDifference,
+		aVisited:                 make(map[visit]visit),
+		bVisited:                 make(map[visit]visit),
 	}.diff(reflect.ValueOf(a), reflect.ValueOf(b))
 	return desc, len(desc) == 0
 }
@@ -78,12 +94,13 @@ func (c customDiffPrinter) StructuredDiff(a, b interface{}) (desc []StructuredDi
 	descStr := make([]string, 0)
 	structuredOut := NewStructuredDiffer()
 	diffPrinter{
-		w:                 (*sbuf)(&descStr),
-		structuredOutput:  structuredOut,
-		customComparators: c.customComparators,
-		numericComparator: c.numericComparator,
-		aVisited:          make(map[visit]visit),
-		bVisited:          make(map[visit]visit),
+		w:                        (*sbuf)(&descStr),
+		structuredOutput:         structuredOut,
+		ignoreTypeNameDifference: c.ignoreTypeNameDifference,
+		customComparators:        c.customComparators,
+		numericComparator:        c.numericComparator,
+		aVisited:                 make(map[visit]visit),
+		bVisited:                 make(map[visit]visit),
 	}.diff(reflect.ValueOf(a), reflect.ValueOf(b))
 	return structuredOut.Results(), len(structuredOut.Results()) == 0
 }
