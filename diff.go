@@ -100,7 +100,7 @@ func (w diffPrinter) structuredPrint(aValue, bValue string) {
 			FieldName: w.l,
 			ValueA:    aValue,
 			ValueB:    bValue,
-			Labels:    w.labels.Current(),
+			Labels:    w.labels.Current(w.l),
 		})
 	}
 }
@@ -263,14 +263,14 @@ func (w diffPrinter) diff(av, bv reflect.Value) {
 		}
 	case reflect.Struct:
 		for i := 0; i < av.NumField(); i++ {
-			if at.Field(i).Type.Kind() == reflect.String && w.labels.Exists(at.Field(i).Name) {
-				w.labels.Set(at.Field(i).Name, av.Field(i).String())
+			if at.Field(i).Type.Kind() == reflect.String {
+				w.labels.SetIfExists(w.l, at.Field(i).Name, av.Field(i).String())
 			}
 		}
 		for i := 0; i < av.NumField(); i++ {
 			w.relabel(at.Field(i).Name).diff(av.Field(i), bv.Field(i))
 		}
-		w.labels.Clear()
+		w.labels.Clear(w.l)
 	default:
 		panic("unknown reflect Kind: " + kind.String())
 	}
@@ -289,10 +289,12 @@ func getReadableTimeCopy(av reflect.Value) time.Time {
 	return time.Time{}
 }
 
+const sep = "."
+
 func (d diffPrinter) relabel(name string) (d1 diffPrinter) {
 	d1 = d
 	if d.l != "" && name[0] != '[' {
-		d1.l += "."
+		d1.l += sep
 	}
 	d1.l += name
 	d1.leafName = name

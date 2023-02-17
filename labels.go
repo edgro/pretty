@@ -1,74 +1,81 @@
 package pretty
 
 import (
+	"strings"
 	"sync"
 )
 
 type Labels interface {
-	Set(name string, value string)
-	Clear()
-	Get(name string) string
-	Current() []Label
-	Exists(name string) bool
+	SetIfExists(level string, name string, value string)
+	Clear(level string)
+	Current(level string) []Label
 }
 
 type labels struct {
-	mu         sync.RWMutex
-	labelsMap  map[string]string
-	labelNames []string
+	mu              sync.RWMutex
+	levelsLabelsMap map[string]map[string]string
+	labelNames      []string
+	labelNamesMap   map[string]struct{}
 }
 
-func (l *labels) Exists(name string) bool {
+func (l *labels) SetIfExists(level string, name string, value string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	_, ok := l.labelsMap[name]
-	return ok
-}
-
-func (l *labels) Set(name string, value string) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	_, ok := l.labelsMap[name]
+	_, ok := l.labelNamesMap[name]
 	if ok {
-		l.labelsMap[name] = value
+		if l.levelsLabelsMap[level] == nil {
+			l.levelsLabelsMap[level] = make(map[string]string)
+			for _, n := range l.labelNames {
+				l.levelsLabelsMap[level][n] = ""
+			}
+		}
+		l.levelsLabelsMap[level][name] = value
 	}
 }
 
-func (l *labels) Clear() {
+func (l *labels) Clear(level string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	for _, k := range l.labelNames {
-		l.labelsMap[k] = ""
+	if l.levelsLabelsMap[level] != nil {
+		delete(l.levelsLabelsMap, level)
 	}
 }
 
-func (l *labels) Get(name string) string {
+func (l *labels) Current(currentLevel string) []Label {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	return l.labelsMap[name]
-}
-
-func (l *labels) Current() []Label {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
-	result := make([]Label, 0)
-	for _, name := range l.labelNames {
-		result = append(result, Label{
-			Name:  name,
-			Value: l.labelsMap[name],
-		})
+	result := make([]Label, len(l.labelNames))
+	for i, lab := range l.labelNames {
+		result[i].Name = lab
+	}
+	breadCrumbs := strings.Split(currentLevel, sep)
+	for _, level := range breadCrumbs {
+		if l.levelsLabelsMap[level] != nil {
+			for i, name := range l.labelNames {
+				val, ok := l.levelsLabelsMap[level][name]
+				if ok {
+					if val != "" {
+						result[i] = Label{
+							Name:  name,
+							Value: val,
+						}
+					}
+				}
+			}
+		}
 	}
 	return result
 }
 
 func NewLabels(names ...string) Labels {
-	m := make(map[string]string)
+	m := make(map[string]struct{})
 	for _, n := range names {
-		m[n] = ""
+		m[n] = struct{}{}
 	}
 	return &labels{
-		mu:         sync.RWMutex{},
-		labelsMap:  m,
-		labelNames: names,
+		mu:              sync.RWMutex{},
+		levelsLabelsMap: make(map[string]map[string]string),
+		labelNamesMap:   m,
+		labelNames:      names,
 	}
 }
