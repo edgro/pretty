@@ -31,6 +31,13 @@ func Test_customStructuredDiffPrinter_Diff(t *testing.T) {
 		child      testStruct2
 	}
 
+	type keywordStruct struct {
+		Keyword    string
+		intField   int
+		floatField float64
+		children   []testStruct2
+	}
+
 	type testTimeStruct struct {
 		TimeField  time.Time
 		timeField  time.Time

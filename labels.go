@@ -49,7 +49,9 @@ func (l *labels) Current(currentLevel string) []Label {
 		result[i].Name = lab
 	}
 	breadCrumbs := strings.Split(currentLevel, sep)
-	for _, level := range breadCrumbs {
+
+	for depth := 1; depth <= len(breadCrumbs); depth++ {
+		level := strings.Join(breadCrumbs[:depth], sep)
 		if l.levelsLabelsMap[level] != nil {
 			for i, name := range l.labelNames {
 				val, ok := l.levelsLabelsMap[level][name]
