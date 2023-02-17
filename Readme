@@ -13,9 +13,22 @@ package pretty
 	diffs, equals := pretty.NewCustomDiff(pretty.WithNumericEpsilon(e)).Diff(a, b)
 
 //structured diff, difference labeling (label name is field of struct on level of which (or children) 
-//difference was found, value of label is value of this field)
-//
-     
+//difference was found, value of label is value of this field):
+
+     			
+/*
+type StructuredDiff struct {
+	FieldName string
+	Labels    []Label
+	ValueA    string
+	ValueB    string
+}
+
+type Label struct {
+	Name  string
+	Value string
+}
+*/
 	diffs, equals = pretty.NewCustomDiff(pretty.WithNumericEpsilon(epsilon),
 				pretty.WithIgnoreTypeNameDiffs(true),
 				pretty.WithLabelFields([]string{
@@ -23,3 +36,4 @@ package pretty
 					"StructFieldNameYouWantAsLabel2",
 				}...),
 			).StructuredDiff(a, b)
+
