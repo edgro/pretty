@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"time"
+	"unsafe"
 )
 
 type sbuf []string
@@ -149,6 +151,17 @@ func (w diffPrinter) diff(av, bv reflect.Value) {
 		}
 	}
 
+	//TODO: Make time comparison adjustable
+	if at.ConvertibleTo(reflect.TypeOf(time.Time{})) && av.CanInterface() {
+		atime := av.Convert(reflect.TypeOf(time.Time{})).Interface().(time.Time)
+		btime := bv.Convert(reflect.TypeOf(time.Time{})).Interface().(time.Time)
+		if atime.String() != btime.String() {
+			w.printf("%v != %v", atime.String(), btime.String())
+			w.structuredPrint(atime.String(), btime.String())
+		}
+		return
+	}
+
 	equals, ok := w.customComparators[at]
 	if ok {
 		if !equals(av.Interface(), bv.Interface()) {
@@ -262,6 +275,19 @@ func (w diffPrinter) diff(av, bv reflect.Value) {
 	}
 }
 
+func getReadableTimeCopy(av reflect.Value) time.Time {
+
+	if av.Type().ConvertibleTo(reflect.TypeOf(time.Time{})) {
+		wall := av.FieldByName("wall").Uint()
+		ext := av.FieldByName("ext").Int()
+		t := time.Unix(int64(wall), ext)
+		// Do something with the newTime value.
+		return t
+
+	}
+	return time.Time{}
+}
+
 func (d diffPrinter) relabel(name string) (d1 diffPrinter) {
 	d1 = d
 	if d.l != "" && name[0] != '[' {
@@ -270,6 +296,16 @@ func (d diffPrinter) relabel(name string) (d1 diffPrinter) {
 	d1.l += name
 	d1.leafName = name
 	return d1
+}
+
+func getValueForRead(src reflect.Value) reflect.Value {
+	rs := reflect.ValueOf(src)
+	rs2 := reflect.New(rs.Type()).Elem()
+	rs2.Set(rs)
+	rf := rs2.Field(0)
+	rf = reflect.NewAt(rf.Type(), unsafe.Pointer(rf.UnsafeAddr())).Elem()
+
+	return rf
 }
 
 // keyEqual compares a and b for equality.

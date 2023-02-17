@@ -2,6 +2,7 @@ package pretty
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -28,6 +29,12 @@ func Test_customStructuredDiffPrinter_Diff(t *testing.T) {
 		intField   int
 		floatField float64
 		child      testStruct2
+	}
+
+	type testTimeStruct struct {
+		TimeField  time.Time
+		timeField  time.Time
+		floatField float64
 	}
 
 	tests := []struct {
@@ -202,13 +209,46 @@ func Test_customStructuredDiffPrinter_Diff(t *testing.T) {
 			},
 			wantOk: false,
 		},
+		{
+			name: "time fields",
+			fields: fields{
+				opts: []func(options *Options){},
+			},
+			args: args{
+				a: testTimeStruct{
+					TimeField:  time.Date(2022, time.July, 1, 1, 31, 31, 0, time.Local),
+					timeField:  time.Date(2022, time.July, 1, 1, 31, 31, 0, time.Local),
+					floatField: 53.23,
+				},
+				b: testTimeStruct{
+					TimeField:  time.Date(2022, time.July, 2, 1, 31, 31, 0, time.Local),
+					timeField:  time.Date(2022, time.July, 2, 1, 31, 31, 0, time.Local),
+					floatField: 53.23,
+				},
+			},
+			wantDesc: []StructuredDiff{
+				{
+					FieldName: "TimeField",
+					Labels:    []Label{},
+					ValueA:    "2022-07-01 01:31:31 +0200 CEST",
+					ValueB:    "2022-07-02 01:31:31 +0200 CEST",
+				},
+				{
+					FieldName: "timeField.ext",
+					Labels:    []Label{},
+					ValueA:    "63792228691",
+					ValueB:    "63792315091",
+				},
+			},
+			wantOk: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := NewCustomDiff(tt.fields.opts...)
 			gotDesc, gotOk := c.StructuredDiff(tt.args.a, tt.args.b)
 			if !assert.Equal(t, tt.wantDesc, gotDesc) {
-				t.Errorf("Diff() gotDesc = %v, want %v", gotDesc, tt.wantDesc)
+				t.Errorf("Diff() gotDesc = \n%#v, want \n%#v", gotDesc, tt.wantDesc)
 			}
 			if gotOk != tt.wantOk {
 				t.Errorf("Diff() gotOk = %v, want %v", gotOk, tt.wantOk)
