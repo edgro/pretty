@@ -92,6 +92,7 @@ func Test_customStructuredDiffPrinter_Diff(t *testing.T) {
 			wantDesc: []StructuredDiff{
 				{
 					FieldName: "intField",
+					Labels:    []Label{},
 					ValueA:    "1",
 					ValueB:    "2",
 				},

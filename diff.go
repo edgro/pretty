@@ -47,6 +47,7 @@ func Pdiff(p Printfer, a, b interface{}) {
 		w:        p,
 		aVisited: make(map[visit]visit),
 		bVisited: make(map[visit]visit),
+		labels:   NewLabels(),
 	}
 	d.diff(reflect.ValueOf(a), reflect.ValueOf(b))
 }
@@ -72,8 +73,8 @@ func Ldiff(l Logfer, a, b interface{}) {
 
 type diffPrinter struct {
 	w        Printfer
-	l        string // labels
-	leafName string // labels
+	l        string
+	leafName string
 
 	structuredOutput         StructuredDiffer
 	ignoreTypeNameDifference bool
