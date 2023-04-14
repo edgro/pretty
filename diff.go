@@ -246,6 +246,11 @@ func (w diffPrinter) diff(av, bv reflect.Value) {
 			w.diff(av.Elem(), bv.Elem())
 		}
 	case reflect.Slice:
+		if bv.Kind() != reflect.Slice {
+			w.printf("%v != %v", at, bt)
+			w.structuredPrint(fmt.Sprintf("%v", at), fmt.Sprintf("%v", bt))
+			break
+		}
 		lenA := av.Len()
 		lenB := bv.Len()
 		if lenA != lenB {
